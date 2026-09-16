@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.mlh.create_assembly_animation.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "client.DiagramDataPacketMixin",
+    "client.PhysicsAssemblerFailedPacketMixin",
+    "client.PhysicsAssemblerGUIHandlerMixin",
+    "client.PhysicsAssemblerLeverPacketMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
