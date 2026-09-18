@@ -10,6 +10,7 @@ import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexSorting;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.SubLevel;
@@ -29,6 +30,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4fStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -173,14 +175,38 @@ public final class AssemblyAnimations {
 
     @SubscribeEvent
     public static void render(final RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES || ACTIVE.isEmpty())
+        final boolean shaderPack = ShaderPacks.inUse();
+        final RenderLevelStageEvent.Stage stage = shaderPack
+                ? RenderLevelStageEvent.Stage.AFTER_LEVEL : RenderLevelStageEvent.Stage.AFTER_PARTICLES;
+        if (event.getStage() != stage || ACTIVE.isEmpty())
             return;
 
         final Minecraft minecraft = Minecraft.getInstance();
-        final ClientLevel level = minecraft.level;
-        if (level == null)
+        if (minecraft.level == null)
             return;
 
+        if (!shaderPack) {
+            draw(event, minecraft, minecraft.level);
+            return;
+        }
+
+        minecraft.getMainRenderTarget().bindWrite(true);
+        final Matrix4fStack modelView = RenderSystem.getModelViewStack();
+        modelView.pushMatrix();
+        modelView.set(event.getModelViewMatrix());
+        RenderSystem.applyModelViewMatrix();
+        RenderSystem.backupProjectionMatrix();
+        RenderSystem.setProjectionMatrix(event.getProjectionMatrix(), VertexSorting.DISTANCE_TO_ORIGIN);
+        try {
+            draw(event, minecraft, minecraft.level);
+        } finally {
+            RenderSystem.restoreProjectionMatrix();
+            modelView.popMatrix();
+            RenderSystem.applyModelViewMatrix();
+        }
+    }
+
+    private static void draw(final RenderLevelStageEvent event, final Minecraft minecraft, final ClientLevel level) {
         final float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(true);
         final Vec3 camera = event.getCamera().getPosition();
 

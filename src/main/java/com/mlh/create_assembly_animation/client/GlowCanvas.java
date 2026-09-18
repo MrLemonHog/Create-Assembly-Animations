@@ -1,11 +1,18 @@
 package com.mlh.create_assembly_animation.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.BufferUploader;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -282,30 +289,32 @@ final class GlowCanvas {
         final Quaternionf rotation = new Quaternionf(cameraRotation);
         final PoseStack poseStack = new PoseStack();
 
-        for (final Label label : this.labels) {
-            this.labelPose(poseStack, label, rotation);
-            final float width = font.width(label.text);
-            final float y = this.labelTop(font, label);
-            final int colour = (Math.round(label.alpha * 0.8f * 255f) << 24) | LABEL_BACKGROUND;
-            final VertexConsumer tag = buffers.getBuffer(label.onTop ? RenderType.textBackgroundSeeThrough() : RenderType.textBackground());
-            final Matrix4f pose = poseStack.last().pose();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableCull();
+        RenderSystem.depthMask(false);
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        for (int pass = 0; pass < 2; pass++) {
+            final boolean onTop = pass == 1;
+            final BufferBuilder tag = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+            for (final Label label : this.labels) {
+                if (label.onTop == onTop)
+                    this.tag(tag, poseStack, label, rotation, font);
+            }
 
-            final float x0 = -width / 2f - 1f;
-            final float x1 = width / 2f + 1f;
-            final float y0 = y - 1f;
-            final float y1 = y + font.lineHeight;
-            tagVertex(tag, pose, x0, y0, colour);
-            tagVertex(tag, pose, x1, y0, colour);
-            tagVertex(tag, pose, x1, y1, colour);
-            tagVertex(tag, pose, x0, y1, colour);
-            tagVertex(tag, pose, x0, y0, colour);
-            tagVertex(tag, pose, x0, y1, colour);
-            tagVertex(tag, pose, x1, y1, colour);
-            tagVertex(tag, pose, x1, y0, colour);
-            poseStack.popPose();
+            final MeshData mesh = tag.build();
+            if (mesh == null)
+                continue;
+            if (onTop)
+                RenderSystem.disableDepthTest();
+            else
+                RenderSystem.enableDepthTest();
+            BufferUploader.drawWithShader(mesh);
         }
-        buffers.endBatch(RenderType.textBackground());
-        buffers.endBatch(RenderType.textBackgroundSeeThrough());
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthMask(true);
+        RenderSystem.enableCull();
+        RenderSystem.disableBlend();
 
         for (final Label label : this.labels) {
             this.labelPose(poseStack, label, rotation);
@@ -318,6 +327,25 @@ final class GlowCanvas {
         buffers.endBatch();
 
         this.labels.clear();
+    }
+
+    private void tag(final BufferBuilder tag, final PoseStack poseStack, final Label label, final Quaternionf rotation,
+                     final Font font) {
+        this.labelPose(poseStack, label, rotation);
+        final float width = font.width(label.text);
+        final float y = this.labelTop(font, label);
+        final int colour = (Math.round(label.alpha * 0.8f * 255f) << 24) | LABEL_BACKGROUND;
+        final Matrix4f pose = poseStack.last().pose();
+
+        final float x0 = -width / 2f - 1f;
+        final float x1 = width / 2f + 1f;
+        final float y0 = y - 1f;
+        final float y1 = y + font.lineHeight;
+        tagVertex(tag, pose, x0, y0, colour);
+        tagVertex(tag, pose, x1, y0, colour);
+        tagVertex(tag, pose, x1, y1, colour);
+        tagVertex(tag, pose, x0, y1, colour);
+        poseStack.popPose();
     }
 
     private void labelPose(final PoseStack poseStack, final Label label, final Quaternionf rotation) {
@@ -333,7 +361,7 @@ final class GlowCanvas {
 
     private static void tagVertex(final VertexConsumer consumer, final Matrix4f pose, final float x, final float y,
                                   final int argb) {
-        consumer.addVertex(pose, x, y, -0.01f).setColor(argb).setLight(LightTexture.FULL_BRIGHT);
+        consumer.addVertex(pose, x, y, -0.01f).setColor(argb);
     }
 
     private void quad(final VertexConsumer target,
