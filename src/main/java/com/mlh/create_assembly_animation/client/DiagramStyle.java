@@ -9,6 +9,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.BlockGetter;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -278,7 +279,7 @@ final class DiagramStyle {
         protected float forcesSince = -1f;
 
         Page(final Role role, @Nullable final UUID subLevel, final GlowShape shape) {
-            super(role, subLevel, shape);
+            super(AnimationStyle.DIAGRAM, role, subLevel, shape);
             this.model = new DiagramRedraw(shape);
         }
 
@@ -341,8 +342,9 @@ final class DiagramStyle {
         }
 
         @Override
-        protected void drawDirect(final ClientLevel level, final Matrix4f matrix, final float time, final float fade) {
-            this.model.draw(level, matrix, (time - this.developStart) / this.developTicks,
+        protected void drawDirect(final BlockGetter blocks, final float daylight, final Matrix4f matrix, final float time,
+                                  final float fade) {
+            this.model.draw(blocks, daylight, matrix, (time - this.developStart) / this.developTicks,
                     Math.max(this.erase(time), 1f - fade), true);
         }
 
@@ -419,8 +421,9 @@ final class DiagramStyle {
         }
 
         @Override
-        protected void drawDirect(final ClientLevel level, final Matrix4f matrix, final float time, final float fade) {
-            this.model.draw(level, matrix, time / APPEAR_TICKS, 1f - fade, true);
+        protected void drawDirect(final BlockGetter blocks, final float daylight, final Matrix4f matrix, final float time,
+                                  final float fade) {
+            this.model.draw(blocks, daylight, matrix, time / APPEAR_TICKS, 1f - fade, true);
         }
 
         @Override
@@ -486,8 +489,9 @@ final class DiagramStyle {
         }
 
         @Override
-        protected void drawDirect(final ClientLevel level, final Matrix4f matrix, final float time, final float fade) {
-            this.model.draw(level, matrix, time / APPEAR_TICKS, Math.max(this.erase(time), 1f - fade), false);
+        protected void drawDirect(final BlockGetter blocks, final float daylight, final Matrix4f matrix, final float time,
+                                  final float fade) {
+            this.model.draw(blocks, daylight, matrix, time / APPEAR_TICKS, Math.max(this.erase(time), 1f - fade), false);
         }
 
         @Override

@@ -51,7 +51,9 @@ void main() {
     world /= world.w;
     vec3 local = (SceneToLocal * vec4(world.xyz, 1.0)).xyz;
 
-    vec3 eye = (SceneToLocal * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+    vec4 near = InvViewProj * vec4(screenUv * 2.0 - 1.0, -1.0, 1.0);
+    near /= near.w;
+    vec3 eye = (SceneToLocal * vec4(near.xyz, 1.0)).xyz;
     vec3 normal = normalize(cross(dFdx(local), dFdy(local)));
     if (dot(normal, eye - local) < 0.0) {
         normal = -normal;

@@ -53,7 +53,7 @@ public final class AAConfigScreen extends Screen {
 
     @Override
     protected void init() {
-        ShipImage.invalidate();
+        StylePreview.invalidate();
         final int centre = this.width / 2;
 
         for (final Phase phase : Phase.values()) {
@@ -103,7 +103,7 @@ public final class AAConfigScreen extends Screen {
     @Override
     public void onClose() {
         AAConfig.SPEC.save();
-        ShipImage.invalidate();
+        StylePreview.invalidate();
         this.minecraft.setScreen(this.parent);
     }
 }

@@ -57,6 +57,10 @@ public enum AnimationStyle {
 
     abstract ShipAnimation disassemble(GlowShape shape);
 
+    ShipAnimation preview(final Phase phase, final GlowShape shape) {
+        return phase == Phase.ASSEMBLY ? this.assemble(null, shape) : this.disassemble(shape);
+    }
+
     @Nullable
     float[] chargeColor() {
         return this.chargeColor;

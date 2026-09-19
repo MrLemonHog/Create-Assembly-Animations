@@ -71,7 +71,7 @@ final class ScannerStyle {
         private Patrol patrol;
 
         Sweep(final Role role, @Nullable final UUID subLevel, final GlowShape shape, final boolean upward) {
-            super(role, subLevel, shape);
+            super(AnimationStyle.SCANNER, role, subLevel, shape);
             this.upward = upward;
             this.bottom = shape.minY - 1.5f;
             this.top = shape.minY + shape.height() + 1.5f;
@@ -130,7 +130,7 @@ final class ScannerStyle {
         private static final float PERIOD = 32f;
 
         Patrol(@Nullable final UUID subLevel, final GlowShape shape) {
-            super(Role.ALIGN, subLevel, shape);
+            super(AnimationStyle.SCANNER, Role.ALIGN, subLevel, shape);
         }
 
         @Override

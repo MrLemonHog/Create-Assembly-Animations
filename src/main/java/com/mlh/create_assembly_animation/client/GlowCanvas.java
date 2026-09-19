@@ -17,7 +17,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
-import org.joml.Quaternionf;
 import org.joml.Quaternionfc;
 import org.joml.Vector3f;
 
@@ -283,10 +282,13 @@ final class GlowCanvas {
     }
 
     void flushLabels(final MultiBufferSource.BufferSource buffers, final Quaternionfc cameraRotation, final Font font) {
+        this.flushLabels(buffers, new Matrix4f().rotation(cameraRotation).scale(0.025f, -0.025f, 0.025f), font);
+    }
+
+    void flushLabels(final MultiBufferSource.BufferSource buffers, final Matrix4f basis, final Font font) {
         if (this.labels.isEmpty())
             return;
 
-        final Quaternionf rotation = new Quaternionf(cameraRotation);
         final PoseStack poseStack = new PoseStack();
 
         RenderSystem.enableBlend();
@@ -299,7 +301,7 @@ final class GlowCanvas {
             final BufferBuilder tag = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
             for (final Label label : this.labels) {
                 if (label.onTop == onTop)
-                    this.tag(tag, poseStack, label, rotation, font);
+                    this.tag(tag, poseStack, label, basis, font);
             }
 
             final MeshData mesh = tag.build();
@@ -317,7 +319,7 @@ final class GlowCanvas {
         RenderSystem.disableBlend();
 
         for (final Label label : this.labels) {
-            this.labelPose(poseStack, label, rotation);
+            this.labelPose(poseStack, label, basis);
             final int alpha = Math.max(8, Math.round(label.alpha * 255f));
             font.drawInBatch(label.text, -font.width(label.text) / 2f, this.labelTop(font, label), (alpha << 24) | label.rgb,
                     false, poseStack.last().pose(), buffers,
@@ -329,9 +331,9 @@ final class GlowCanvas {
         this.labels.clear();
     }
 
-    private void tag(final BufferBuilder tag, final PoseStack poseStack, final Label label, final Quaternionf rotation,
+    private void tag(final BufferBuilder tag, final PoseStack poseStack, final Label label, final Matrix4f basis,
                      final Font font) {
-        this.labelPose(poseStack, label, rotation);
+        this.labelPose(poseStack, label, basis);
         final float width = font.width(label.text);
         final float y = this.labelTop(font, label);
         final int colour = (Math.round(label.alpha * 0.8f * 255f) << 24) | LABEL_BACKGROUND;
@@ -348,11 +350,11 @@ final class GlowCanvas {
         poseStack.popPose();
     }
 
-    private void labelPose(final PoseStack poseStack, final Label label, final Quaternionf rotation) {
+    private void labelPose(final PoseStack poseStack, final Label label, final Matrix4f basis) {
         poseStack.pushPose();
         poseStack.translate(label.position.x, label.position.y, label.position.z);
-        poseStack.mulPose(rotation);
-        poseStack.scale(0.025f * label.scale, -0.025f * label.scale, 0.025f * label.scale);
+        poseStack.mulPose(basis);
+        poseStack.scale(label.scale, label.scale, label.scale);
     }
 
     private float labelTop(final Font font, final Label label) {

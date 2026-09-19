@@ -16,6 +16,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -63,11 +64,15 @@ abstract class ShipAnimation {
     private ShipAnimation successor;
 
     ShipAnimation(final Role role, @Nullable final UUID subLevelId, final GlowShape shape) {
+        this(Phase.of(role, subLevelId).style(), role, subLevelId, shape);
+    }
+
+    ShipAnimation(final AnimationStyle style, final Role role, @Nullable final UUID subLevelId, final GlowShape shape) {
         this.role = role;
         this.subLevelId = subLevelId;
         this.shape = shape;
-        this.style = Phase.of(role, subLevelId).style();
-        this.playbackSpeed = this.style.settings().speed().get().floatValue();
+        this.style = style;
+        this.playbackSpeed = style.settings().speed().get().floatValue();
     }
 
     protected abstract float lifetime();
@@ -80,7 +85,8 @@ abstract class ShipAnimation {
     protected void onTick(final ClientLevel level, @Nullable final Pose3dc pose, final float time) {
     }
 
-    protected void drawDirect(final ClientLevel level, final Matrix4f matrix, final float time, final float fade) {
+    protected void drawDirect(final BlockGetter blocks, final float daylight, final Matrix4f matrix, final float time,
+                              final float fade) {
     }
 
     void acceptForces(final Forces forces) {
@@ -211,14 +217,18 @@ abstract class ShipAnimation {
             pose.transformPositionInverse(eye);
         eye.sub(origin.getX(), origin.getY(), origin.getZ());
 
-        final Matrix4f matrix = poseStack.last().pose();
-        final float time = ticks * this.playbackSpeed;
-        this.drawDirect(level, matrix, time, fade);
-
-        canvas.begin(glow, ink, overlay, matrix, fade * brightness, fade, eye.x, eye.y, eye.z);
-        this.draw(canvas, time);
+        this.renderFrame(level, level.getSkyDarken(1f), poseStack.last().pose(), eye, ticks * this.playbackSpeed, fade,
+                glow, ink, overlay, canvas, brightness);
 
         poseStack.popPose();
+    }
+
+    final void renderFrame(final BlockGetter blocks, final float daylight, final Matrix4f matrix, final Vector3dc eye,
+                           final float time, final float fade, final VertexConsumer glow, final VertexConsumer ink,
+                           final VertexConsumer overlay, final GlowCanvas canvas, final float brightness) {
+        this.drawDirect(blocks, daylight, matrix, time, fade);
+        canvas.begin(glow, ink, overlay, matrix, fade * brightness, fade, eye.x(), eye.y(), eye.z());
+        this.draw(canvas, time);
     }
 
     @Nullable

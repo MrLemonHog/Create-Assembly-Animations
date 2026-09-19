@@ -14,12 +14,12 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 import org.jetbrains.annotations.Nullable;
@@ -71,24 +71,24 @@ public final class DiagramRedraw implements AutoCloseable {
         }
     }
 
-    void draw(final ClientLevel level, final Matrix4f matrix, final float reveal, final float erase,
-              final boolean eraseFromFar) {
+    void draw(final BlockGetter blocks, final float daylight, final Matrix4f matrix, final float reveal,
+              final float erase, final boolean eraseFromFar) {
         if (reveal <= 0f || erase >= 1f)
             return;
 
         if (!this.built) {
             this.built = true;
-            this.volumes = this.build(level);
+            this.volumes = this.build(blocks);
         }
         if (this.volumes != null)
-            this.redraw(level, matrix, this.volumes, front(reveal), front(erase), eraseFromFar);
+            this.redraw(daylight, matrix, this.volumes, front(reveal), front(erase), eraseFromFar);
     }
 
     private static float front(final float progress) {
         return ShipAnimation.clamp01(progress) * (1f + 2f * SOFTNESS) - SOFTNESS;
     }
 
-    private void redraw(final ClientLevel level, final Matrix4f local, final VertexBuffer volumes, final float reveal,
+    private void redraw(final float daylight, final Matrix4f local, final VertexBuffer volumes, final float reveal,
                         final float erase, final boolean eraseFromFar) {
         final ShaderInstance post = shader;
         final ShaderInstance position = GameRenderer.getPositionShader();
@@ -146,7 +146,7 @@ public final class DiagramRedraw implements AutoCloseable {
         post.safeGetUniform("EraseFromFar").set(eraseFromFar ? 1f : 0f);
         post.safeGetUniform("Softness").set(SOFTNESS);
         post.safeGetUniform("Reach").set(this.reach);
-        post.safeGetUniform("Exposure").set(DIAGRAM_EXPOSURE / Mth.clamp(level.getSkyDarken(1f), 0.25f, 1f));
+        post.safeGetUniform("Exposure").set(DIAGRAM_EXPOSURE / Mth.clamp(daylight, 0.25f, 1f));
 
         RenderSystem.disableDepthTest();
         RenderSystem.disableCull();
@@ -181,7 +181,7 @@ public final class DiagramRedraw implements AutoCloseable {
     }
 
     @Nullable
-    private VertexBuffer build(final ClientLevel level) {
+    private VertexBuffer build(final BlockGetter blocks) {
         final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         final BlockPos.MutableBlockPos neighbour = new BlockPos.MutableBlockPos();
         final ByteBufferBuilder bytes = new ByteBufferBuilder(1 << 16);
@@ -191,11 +191,11 @@ public final class DiagramRedraw implements AutoCloseable {
 
             for (int block = 0; block < this.shape.size; block++) {
                 pos.set(this.shape.position(block));
-                final BlockState state = level.getBlockState(pos);
-                if (state.isAir() || !this.canBeSeen(level, block, pos, neighbour))
+                final BlockState state = blocks.getBlockState(pos);
+                if (state.isAir() || !this.canBeSeen(blocks, block, pos, neighbour))
                     continue;
 
-                final float grow = level.getBlockEntity(pos) != null ? BLOCK_ENTITY_GROW : BLOCK_GROW;
+                final float grow = state.hasBlockEntity() ? BLOCK_ENTITY_GROW : BLOCK_GROW;
                 box(builder, this.shape.x[block], this.shape.y[block], this.shape.z[block], grow);
             }
 
@@ -213,13 +213,13 @@ public final class DiagramRedraw implements AutoCloseable {
         }
     }
 
-    private boolean canBeSeen(final ClientLevel level, final int block, final BlockPos pos, final BlockPos.MutableBlockPos neighbour) {
+    private boolean canBeSeen(final BlockGetter blocks, final int block, final BlockPos pos, final BlockPos.MutableBlockPos neighbour) {
         if (this.shape.faces[block] != 0)
             return true;
 
         for (final Direction direction : Direction.values()) {
             neighbour.setWithOffset(pos, direction);
-            if (!level.getBlockState(neighbour).isSolidRender(level, neighbour))
+            if (!blocks.getBlockState(neighbour).isSolidRender(blocks, neighbour))
                 return true;
         }
         return false;
