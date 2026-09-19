@@ -16,7 +16,7 @@ final class StylePreview {
     }
 
     static void render(final GuiGraphics graphics, final AnimationStyle style, final Phase phase, final int x,
-                       final int y, final int width, final int height) {
+                       final int y, final int width, final int height, final boolean compact) {
         final float ticks = (Util.getMillis() % 3_600_000L) / 50f;
 
         graphics.enableScissor(x, y, x + width, y + height);
@@ -26,7 +26,7 @@ final class StylePreview {
         for (int gy = y + (height / 2) % GRID; gy < y + height; gy += GRID)
             graphics.fill(x, gy, x + width, gy + 1, PAPER_GRID);
 
-        AnimationPreview.render(graphics, style, phase, x, y, width, height, ticks);
+        AnimationPreview.render(graphics, style, phase, x, y, width, height, ticks, compact);
         graphics.disableScissor();
     }
 

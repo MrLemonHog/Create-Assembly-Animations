@@ -7,6 +7,19 @@
   "create_assembly_animation.configuration.particles.tooltip": "Создавать частицы вместе с анимациями.",
   "create_assembly_animation.configuration.sounds": "Звуки",
   "create_assembly_animation.configuration.sounds.tooltip": "Проигрывать звуки, сопровождающие анимации.",
+  "create_assembly_animation.configuration.tab.assembly": "Сборка",
+  "create_assembly_animation.configuration.tab.disassembly": "Разборка",
+  "create_assembly_animation.configuration.view": "Вид",
+  "create_assembly_animation.configuration.view.tiles": "Плитки",
+  "create_assembly_animation.configuration.view.list": "Список",
+  "create_assembly_animation.configuration.view.tooltip": "Показывать стили сеткой превью или списком с описаниями.",
+  "create_assembly_animation.configuration.search": "Поиск стилей…",
+  "create_assembly_animation.configuration.styles": "Стили анимации",
+  "create_assembly_animation.configuration.no_styles": "Ни один стиль не подходит под поиск",
+  "create_assembly_animation.configuration.missing_style": "⚠ Стиль %s не установлен, вместо него используется %s",
+  "create_assembly_animation.configuration.preview": "Превью",
+  "create_assembly_animation.configuration.use_for": "Выбрать для: %s",
+  "create_assembly_animation.configuration.used_for": "Выбран для: %s",
   "create_assembly_animation.configuration.open_settings": "Настройки стиля",
   "create_assembly_animation.configuration.style_settings": "Настройки: %s",
   "create_assembly_animation.configuration.reset": "Сбросить",
@@ -35,5 +48,6 @@
   "create_assembly_animation.laser_color.gold": "Золотой",
   "create_assembly_animation.laser_color.magenta": "Пурпурный",
   "create_assembly_animation.laser_color.red": "Красный",
-  "create_assembly_animation.laser_color.white": "Белый"
+  "create_assembly_animation.laser_color.white": "Белый",
+  "create_assembly_animation.source.built_in": "Create Assembly Animation"
 }

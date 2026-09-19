@@ -22,7 +22,21 @@ public enum Phase {
     }
 
     public AnimationStyle style() {
+        final AnimationStyle style = this.configuredStyle();
+        return style != null ? style : AnimationStyle.DEFAULT;
+    }
+
+    @Nullable
+    public AnimationStyle configuredStyle() {
+        return AnimationStyle.byId(AnimationStyle.parseId(this.configuredStyleId()));
+    }
+
+    public String configuredStyleId() {
         return this.settings().style().get();
+    }
+
+    public void select(final AnimationStyle style) {
+        this.settings().style().set(style.id().toString());
     }
 
     public String id() {

@@ -72,7 +72,7 @@ public final class AnimationPreview {
     private static final ByteBufferBuilder OVERLAY_BYTES = new ByteBufferBuilder(1 << 12);
     private static final GlowCanvas CANVAS = new GlowCanvas();
 
-    private static final Map<AnimationStyle, Map<Phase, ShipAnimation>> ANIMATIONS = new EnumMap<>(AnimationStyle.class);
+    private static final Map<AnimationStyle, Map<Phase, ShipAnimation>> ANIMATIONS = new HashMap<>();
 
     @Nullable
     private static Scene scene;
@@ -87,10 +87,11 @@ public final class AnimationPreview {
     }
 
     public static void render(final GuiGraphics graphics, final AnimationStyle style, final Phase phase, final int x,
-                              final int y, final int width, final int height, final float ticks) {
+                              final int y, final int width, final int height, final float ticks,
+                              final boolean compact) {
         final Scene scene = scene();
         final ShipAnimation animation = animation(style, phase, scene);
-        final Matrix4f matrix = scene.fit(graphics.pose().last().pose(), x, y, width, height);
+        final Matrix4f matrix = scene.fit(graphics.pose().last().pose(), x, y, width, height, compact);
         final float pixelsPerBlock = matrix.getScale(new Vector3f()).x;
 
         final float step = animation.step();
@@ -185,7 +186,8 @@ public final class AnimationPreview {
         @Nullable
         private final Forces forces;
         private final Matrix4f rotation = new Matrix4f().rotateX(PITCH * Mth.DEG_TO_RAD).rotateY(YAW * Mth.DEG_TO_RAD);
-        private final float[] bounds = new float[4];
+        private final float[] annotated = new float[4];
+        private final float[] compact = new float[4];
 
         private final Block propeller;
         @Nullable
@@ -231,33 +233,38 @@ public final class AnimationPreview {
             this.lever = standalone("simulated:block/physics_assembler/lever");
             this.blades = standalone("aeronautics:block/andesite_propeller/propeller");
 
-            final float minX = this.shape.minX - 0.5f;
-            final float maxX = this.shape.maxX + 3f;
-            final float minY = this.shape.minY;
-            final float maxY = this.shape.maxY + 3.2f;
-            final float minZ = this.shape.minZ - 0.5f;
-            final float maxZ = this.shape.maxZ + 3f;
-            this.bounds[0] = Float.MAX_VALUE;
-            this.bounds[1] = Float.MAX_VALUE;
-            this.bounds[2] = -Float.MAX_VALUE;
-            this.bounds[3] = -Float.MAX_VALUE;
+            this.bounds(this.annotated, -0.5f, 3f, 0f, 3.2f, -0.5f, 3f);
+            this.bounds(this.compact, -0.15f, 1.15f, -0.1f, 1.35f, -0.15f, 1.15f);
+        }
+
+        private void bounds(final float[] bounds, final float minX, final float maxX, final float minY,
+                            final float maxY, final float minZ, final float maxZ) {
+            bounds[0] = Float.MAX_VALUE;
+            bounds[1] = Float.MAX_VALUE;
+            bounds[2] = -Float.MAX_VALUE;
+            bounds[3] = -Float.MAX_VALUE;
             final Vector3f corner = new Vector3f();
             for (int i = 0; i < 8; i++) {
-                this.rotation.transformPosition((i & 1) == 0 ? minX : maxX, (i & 2) == 0 ? minY : maxY,
-                        (i & 4) == 0 ? minZ : maxZ, corner);
-                this.bounds[0] = Math.min(this.bounds[0], corner.x);
-                this.bounds[1] = Math.min(this.bounds[1], corner.y);
-                this.bounds[2] = Math.max(this.bounds[2], corner.x);
-                this.bounds[3] = Math.max(this.bounds[3], corner.y);
+                this.rotation.transformPosition(
+                        (i & 1) == 0 ? this.shape.minX + minX : this.shape.maxX + maxX,
+                        (i & 2) == 0 ? this.shape.minY + minY : this.shape.maxY + maxY,
+                        (i & 4) == 0 ? this.shape.minZ + minZ : this.shape.maxZ + maxZ, corner);
+                bounds[0] = Math.min(bounds[0], corner.x);
+                bounds[1] = Math.min(bounds[1], corner.y);
+                bounds[2] = Math.max(bounds[2], corner.x);
+                bounds[3] = Math.max(bounds[3], corner.y);
             }
         }
 
-        Matrix4f fit(final Matrix4f pose, final int x, final int y, final int width, final int height) {
-            final float spanX = this.bounds[2] - this.bounds[0];
-            final float spanY = this.bounds[3] - this.bounds[1];
-            final float scale = Math.max(1f, Math.min((width - 8) / spanX, (height - 8) / spanY));
-            final float centerX = (this.bounds[0] + this.bounds[2]) / 2f;
-            final float centerY = (this.bounds[1] + this.bounds[3]) / 2f;
+        Matrix4f fit(final Matrix4f pose, final int x, final int y, final int width, final int height,
+                     final boolean compact) {
+            final float[] bounds = compact ? this.compact : this.annotated;
+            final float spanX = bounds[2] - bounds[0];
+            final float spanY = bounds[3] - bounds[1];
+            final float padding = compact ? Math.min(4f, Math.min(width, height) * 0.06f) : 4f;
+            final float scale = Math.max(1f, Math.min((width - padding * 2) / spanX, (height - padding * 2) / spanY));
+            final float centerX = (bounds[0] + bounds[2]) / 2f;
+            final float centerY = (bounds[1] + bounds[3]) / 2f;
 
             return new Matrix4f(pose)
                     .translate(x + width / 2f, y + height / 2f, SCENE_Z)

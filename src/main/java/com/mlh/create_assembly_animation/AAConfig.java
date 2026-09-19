@@ -1,6 +1,5 @@
 package com.mlh.create_assembly_animation;
 
-import com.mlh.create_assembly_animation.client.AnimationStyle;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
@@ -17,6 +16,7 @@ public final class AAConfig {
 
     public static final ModConfigSpec.BooleanValue PARTICLES;
     public static final ModConfigSpec.BooleanValue SOUNDS;
+    public static final ModConfigSpec.EnumValue<StyleView> STYLE_VIEW;
 
     public static final PhaseSettings ASSEMBLY;
     public static final PhaseSettings DISASSEMBLY;
@@ -39,6 +39,10 @@ public final class AAConfig {
         SOUNDS = builder
                 .comment("Play the sounds that accompany the animations.")
                 .define("sounds", true);
+
+        STYLE_VIEW = builder
+                .comment("How the config screen lays the styles out: TILES or LIST.")
+                .defineEnum("style_view", StyleView.TILES);
 
         builder.comment("Assembly: a structure in the world becomes a physics object (physics on).").push("assembly");
         ASSEMBLY = PhaseSettings.define(builder);
@@ -108,22 +112,28 @@ public final class AAConfig {
         }
     }
 
-    public record PhaseSettings(ModConfigSpec.BooleanValue enabled, ModConfigSpec.EnumValue<AnimationStyle> style) {
+    public enum StyleView {
+        TILES,
+        LIST
+    }
+
+    public record PhaseSettings(ModConfigSpec.BooleanValue enabled, ModConfigSpec.ConfigValue<String> style) {
 
         private static PhaseSettings define(final ModConfigSpec.Builder builder) {
             return new PhaseSettings(
                     builder.comment("Play an animation.")
                             .define("enabled", true),
-                    builder.comment("The look of the animation.",
-                                    "DIAGRAM - the structure is sketched and redrawn like a page of the Contraption Diagram, with its forces.",
-                                    "SCANNER - a laser sheet sweeps up or down the structure.")
-                            .defineEnum("style", AnimationStyle.DIAGRAM));
+                    builder.comment("Id of the style the animation plays in.",
+                                    "create_assembly_animation:diagram - the structure is sketched and redrawn like a page of the Contraption Diagram, with its forces.",
+                                    "create_assembly_animation:scanner - a laser sheet sweeps up or down the structure.",
+                                    "Styles added by other mods and packs have ids of their own. An id nothing provides is kept, and Diagram plays instead.")
+                            .define("style", CreateAssemblyAnimation.ID + ":diagram", value -> value instanceof String));
         }
     }
 
     public record StyleSettings(ModConfigSpec.DoubleValue brightness, ModConfigSpec.DoubleValue speed) {
 
-        private static StyleSettings define(final ModConfigSpec.Builder builder) {
+        public static StyleSettings define(final ModConfigSpec.Builder builder) {
             return new StyleSettings(
                     builder.comment("How strongly the structure glows. 0 hides the glow but keeps particles and sounds.")
                             .defineInRange("brightness", 1.0, MIN_BRIGHTNESS, MAX_BRIGHTNESS),

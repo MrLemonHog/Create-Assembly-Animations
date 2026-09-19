@@ -7,6 +7,19 @@
   "create_assembly_animation.configuration.particles.tooltip": "Spawn particles with the animations.",
   "create_assembly_animation.configuration.sounds": "Sounds",
   "create_assembly_animation.configuration.sounds.tooltip": "Play the sounds that accompany the animations.",
+  "create_assembly_animation.configuration.tab.assembly": "Assembly",
+  "create_assembly_animation.configuration.tab.disassembly": "Disassembly",
+  "create_assembly_animation.configuration.view": "View",
+  "create_assembly_animation.configuration.view.tiles": "Tiles",
+  "create_assembly_animation.configuration.view.list": "List",
+  "create_assembly_animation.configuration.view.tooltip": "Show the styles as a grid of previews or as a list with their descriptions.",
+  "create_assembly_animation.configuration.search": "Search styles…",
+  "create_assembly_animation.configuration.styles": "Animation styles",
+  "create_assembly_animation.configuration.no_styles": "No style matches the search",
+  "create_assembly_animation.configuration.missing_style": "⚠ Style %s is not installed, %s plays instead",
+  "create_assembly_animation.configuration.preview": "Preview",
+  "create_assembly_animation.configuration.use_for": "Use for %s",
+  "create_assembly_animation.configuration.used_for": "Used for %s",
   "create_assembly_animation.configuration.open_settings": "Style settings",
   "create_assembly_animation.configuration.style_settings": "%s settings",
   "create_assembly_animation.configuration.reset": "Reset to defaults",
@@ -35,5 +48,6 @@
   "create_assembly_animation.laser_color.gold": "Gold",
   "create_assembly_animation.laser_color.magenta": "Magenta",
   "create_assembly_animation.laser_color.red": "Red",
-  "create_assembly_animation.laser_color.white": "White"
+  "create_assembly_animation.laser_color.white": "White",
+  "create_assembly_animation.source.built_in": "Create Assembly Animation"
 }
