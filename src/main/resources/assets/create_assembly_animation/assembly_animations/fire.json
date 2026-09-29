@@ -1,0 +1,54 @@
+{
+  "duration": 5,
+  "area": "screen",
+  "margin": 2,
+  "textures": {
+    "Fire": "minecraft:textures/block/fire_0.png",
+    "FireAlt": "minecraft:textures/block/fire_1.png"
+  },
+  "sounds": [
+    {
+      "sound": "minecraft:item.flintandsteel.use",
+      "at": 0.0,
+      "volume": 1.0
+    },
+    {
+      "sound": "minecraft:block.fire.ambient",
+      "every": 0.9,
+      "volume": 0.9,
+      "stages": [
+        "assembly",
+        "alignment",
+        "disassembly"
+      ]
+    },
+    {
+      "sound": "minecraft:block.fire.extinguish",
+      "at": 0.95,
+      "volume": 0.7
+    }
+  ],
+  "particles": [
+    {
+      "type": "minecraft:flame",
+      "from": 0.1,
+      "to": 0.9,
+      "rate": 18,
+      "speed": 0.02,
+      "stages": "assembly"
+    },
+    {
+      "type": "minecraft:large_smoke",
+      "from": 0.2,
+      "to": 1.0,
+      "rate": 14,
+      "speed": 0.05
+    },
+    {
+      "type": "minecraft:smoke",
+      "rate": 6,
+      "speed": 0.03,
+      "stages": "alignment"
+    }
+  ]
+}

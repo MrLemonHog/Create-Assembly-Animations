@@ -3,6 +3,7 @@ package com.mlh.create_assembly_animation.client.gui;
 import com.mlh.create_assembly_animation.AAConfig;
 import com.mlh.create_assembly_animation.CreateAssemblyAnimation;
 import com.mlh.create_assembly_animation.client.AnimationStyle;
+import com.mlh.create_assembly_animation.client.PackAnimations;
 import com.mlh.create_assembly_animation.client.Phase;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -202,6 +203,7 @@ public final class AAConfigScreen extends Screen {
     public void onClose() {
         this.rememberScroll();
         AAConfig.SPEC.save();
+        PackAnimations.saveSettings();
         StylePreview.invalidate();
         this.minecraft.setScreen(this.parent);
     }

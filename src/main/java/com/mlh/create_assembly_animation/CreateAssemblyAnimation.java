@@ -1,6 +1,7 @@
 package com.mlh.create_assembly_animation;
 
-import com.mlh.create_assembly_animation.client.DiagramRedraw;
+import com.mlh.create_assembly_animation.client.AssemblyAnimations;
+import com.mlh.create_assembly_animation.client.PackAnimations;
 import com.mlh.create_assembly_animation.client.gui.AAConfigScreen;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
@@ -18,7 +19,8 @@ public class CreateAssemblyAnimation {
     public CreateAssemblyAnimation(final IEventBus modBus, final ModContainer container) {
         container.registerConfig(ModConfig.Type.CLIENT, AAConfig.SPEC);
         container.registerExtensionPoint(IConfigScreenFactory.class, (mod, parent) -> new AAConfigScreen(parent));
-        modBus.addListener(DiagramRedraw::registerShader);
+        modBus.addListener(AssemblyAnimations::registerShaders);
+        modBus.addListener(PackAnimations::register);
     }
 
     public static ResourceLocation asResource(final String path) {

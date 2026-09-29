@@ -84,6 +84,7 @@ public final class AnimationPreview {
         ANIMATIONS.values().forEach(byPhase -> byPhase.values().forEach(ShipAnimation::close));
         ANIMATIONS.clear();
         scene = null;
+        PackEffects.clearColors();
     }
 
     public static void render(final GuiGraphics graphics, final AnimationStyle style, final Phase phase, final int x,
@@ -122,11 +123,14 @@ public final class AnimationPreview {
         final BufferBuilder overlay = new BufferBuilder(OVERLAY_BYTES, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
         animation.renderFrame(scene.blocks, 1f, matrix, eye, time, 1f, glow, ink, overlay, CANVAS,
-                animation.style.settings().brightness().get().floatValue());
+                animation.style.brightness());
 
         final MeshData inkMesh = ink.build();
         if (inkMesh != null)
             RenderType.debugQuads().draw(inkMesh);
+
+        CANVAS.flushItems(graphics.bufferSource());
+        CANVAS.flushSprites();
 
         RenderSystem.enableBlend();
         RenderSystem.disableCull();
@@ -166,7 +170,7 @@ public final class AnimationPreview {
     private static ShipAnimation animation(final AnimationStyle style, final Phase phase, final Scene scene) {
         final Map<Phase, ShipAnimation> byPhase = ANIMATIONS.computeIfAbsent(style, key -> new EnumMap<>(Phase.class));
         final ShipAnimation current = byPhase.get(phase);
-        if (current != null && current.step() == style.settings().speed().get().floatValue())
+        if (current != null && current.step() == style.speed())
             return current;
 
         if (current != null)

@@ -1,27 +1,39 @@
 package com.mlh.create_assembly_animation.client;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.BufferUploader;
+import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionfc;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 final class GlowCanvas {
 
@@ -34,8 +46,35 @@ final class GlowCanvas {
                          boolean onTop) {
     }
 
+    private static final float[] CUBE_SHADE = {0.5f, 1.0f, 0.8f, 0.8f, 0.6f, 0.6f};
+
+    private record Sheet(ResourceLocation atlas, boolean additive) {
+    }
+
+    private static final class SpriteBatch {
+
+        private final ByteBufferBuilder bytes = new ByteBufferBuilder(1 << 16);
+        @Nullable
+        private BufferBuilder builder;
+
+        BufferBuilder builder() {
+            if (this.builder == null)
+                this.builder = new BufferBuilder(this.bytes, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+            return this.builder;
+        }
+    }
+
+    private record ItemDraw(ItemStack stack, Matrix4f pose, int light, int seed) {
+    }
+
+    private final List<ItemDraw> items = new ArrayList<>();
     private final float[] point = new float[3];
+    private final float[] right = new float[3];
+    private final float[] up = new float[3];
+    private final Vector3f corner = new Vector3f();
     private final List<Label> labels = new ArrayList<>();
+    private final Map<Sheet, SpriteBatch> sprites = new LinkedHashMap<>();
+    private float shade = 1f;
 
     private VertexConsumer glow;
     private VertexConsumer ink;
@@ -58,6 +97,171 @@ final class GlowCanvas {
         this.eyeX = eyeX;
         this.eyeY = eyeY;
         this.eyeZ = eyeZ;
+    }
+
+    void shade(final float shade) {
+        this.shade = shade;
+    }
+
+    void sprite(@Nullable final TextureAtlasSprite sprite, final boolean additive, final float x, final float y,
+                final float z, final float half, final float roll, final float flip,
+                final float r, final float g, final float b, final float a) {
+        final float alpha = Math.min(1f, a * (additive ? this.glowScale : this.inkScale));
+        if (sprite == null || alpha < 0.1f || half <= 0f)
+            return;
+
+        this.cameraAxes(x, y, z);
+        final float cos = Mth.cos(roll);
+        final float sin = Mth.sin(roll);
+        final float w = half * Math.max(0.15f, Math.abs(flip));
+        final float rx = (this.right[0] * cos + this.up[0] * sin) * w;
+        final float ry = (this.right[1] * cos + this.up[1] * sin) * w;
+        final float rz = (this.right[2] * cos + this.up[2] * sin) * w;
+        final float ux = (this.up[0] * cos - this.right[0] * sin) * half;
+        final float uy = (this.up[1] * cos - this.right[1] * sin) * half;
+        final float uz = (this.up[2] * cos - this.right[2] * sin) * half;
+        final float lit = additive ? 1f : this.shade;
+        final float cr = r * lit;
+        final float cg = g * lit;
+        final float cb = b * lit;
+
+        final BufferBuilder builder = this.batch(sprite, additive);
+        this.spriteVertex(builder, x - rx - ux, y - ry - uy, z - rz - uz, sprite.getU0(), sprite.getV1(), cr, cg, cb, alpha);
+        this.spriteVertex(builder, x + rx - ux, y + ry - uy, z + rz - uz, sprite.getU1(), sprite.getV1(), cr, cg, cb, alpha);
+        this.spriteVertex(builder, x + rx + ux, y + ry + uy, z + rz + uz, sprite.getU1(), sprite.getV0(), cr, cg, cb, alpha);
+        this.spriteVertex(builder, x - rx + ux, y - ry + uy, z - rz + uz, sprite.getU0(), sprite.getV0(), cr, cg, cb, alpha);
+    }
+
+    void cube(final TextureAtlasSprite sprite, final float x, final float y, final float z, final float half,
+              final Quaternionfc rotation, final float r, final float g, final float b, final float a) {
+        final float alpha = Math.min(1f, a * this.inkScale);
+        if (alpha < 0.1f || half <= 0f)
+            return;
+
+        final BufferBuilder builder = this.batch(sprite, false);
+        for (final Direction face : Direction.values()) {
+            final int axis = face.getAxis().ordinal();
+            final int u = (axis + 1) % 3;
+            final int v = (axis + 2) % 3;
+            final boolean positive = face.getAxisDirection() == Direction.AxisDirection.POSITIVE;
+            final float lit = CUBE_SHADE[face.ordinal()] * this.shade;
+            for (int corner = 0; corner < 4; corner++) {
+                final int k = positive ? corner : 3 - corner;
+                final float cu = k == 1 || k == 2 ? half : -half;
+                final float cv = k >= 2 ? half : -half;
+                this.point[axis] = positive ? half : -half;
+                this.point[u] = cu;
+                this.point[v] = cv;
+                this.corner.set(this.point[0], this.point[1], this.point[2]).rotate(rotation);
+                this.spriteVertex(builder, x + this.corner.x, y + this.corner.y, z + this.corner.z,
+                        cu < 0f ? sprite.getU0() : sprite.getU1(), cv < 0f ? sprite.getV1() : sprite.getV0(),
+                        r * lit, g * lit, b * lit, alpha);
+            }
+        }
+    }
+
+    void item(final ItemStack stack, final float x, final float y, final float z, final float scale,
+              final Quaternionfc rotation, final int light, final int seed) {
+        if (stack.isEmpty() || scale <= 0.01f || this.inkScale < 0.1f)
+            return;
+        this.items.add(new ItemDraw(stack, new Matrix4f(this.matrix).translate(x, y, z).rotate(rotation).scale(scale),
+                light, seed));
+    }
+
+    void flushItems(final MultiBufferSource.BufferSource buffers) {
+        if (this.items.isEmpty())
+            return;
+
+        final Minecraft minecraft = Minecraft.getInstance();
+        final PoseStack poseStack = new PoseStack();
+        for (final ItemDraw item : this.items) {
+            poseStack.last().pose().set(item.pose);
+            final Matrix3f linear = new Matrix3f(item.pose);
+            final float scale = (float) Math.cbrt(Math.abs(linear.determinant()));
+            poseStack.last().normal().set(linear.invert().transpose().scale(scale));
+            minecraft.getItemRenderer().renderStatic(item.stack, ItemDisplayContext.GROUND, item.light,
+                    OverlayTexture.NO_OVERLAY, poseStack, buffers, minecraft.level, item.seed);
+        }
+        buffers.endBatch();
+        this.items.clear();
+    }
+
+    void flushSprites() {
+        boolean drew = false;
+        for (final Map.Entry<Sheet, SpriteBatch> entry : this.sprites.entrySet()) {
+            final SpriteBatch batch = entry.getValue();
+            if (batch.builder == null)
+                continue;
+            final MeshData mesh = batch.builder.build();
+            batch.builder = null;
+            if (mesh == null)
+                continue;
+
+            if (!drew) {
+                drew = true;
+                RenderSystem.enableBlend();
+                RenderSystem.enableDepthTest();
+                RenderSystem.depthMask(false);
+                RenderSystem.disableCull();
+                RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
+            }
+            if (entry.getKey().additive())
+                RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
+            else
+                RenderSystem.defaultBlendFunc();
+            RenderSystem.setShaderTexture(0, entry.getKey().atlas());
+            BufferUploader.drawWithShader(mesh);
+        }
+        if (drew) {
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.depthMask(true);
+            RenderSystem.enableCull();
+            RenderSystem.disableBlend();
+        }
+    }
+
+    private BufferBuilder batch(final TextureAtlasSprite sprite, final boolean additive) {
+        return this.sprites.computeIfAbsent(new Sheet(sprite.atlasLocation(), additive), key -> new SpriteBatch()).builder();
+    }
+
+    private void spriteVertex(final BufferBuilder builder, final float x, final float y, final float z,
+                              final float u, final float v, final float r, final float g, final float b, final float a) {
+        builder.addVertex(this.matrix, x, y, z).setUv(u, v)
+                .setColor(Math.min(r, 1f), Math.min(g, 1f), Math.min(b, 1f), a);
+    }
+
+    private void cameraAxes(final float x, final float y, final float z) {
+        float vx = (float) (this.eyeX - x);
+        float vy = (float) (this.eyeY - y);
+        float vz = (float) (this.eyeZ - z);
+        final float length = Mth.sqrt(vx * vx + vy * vy + vz * vz);
+        if (length < 1.0e-5f) {
+            vx = 0f;
+            vy = 0f;
+            vz = 1f;
+        } else {
+            vx /= length;
+            vy /= length;
+            vz /= length;
+        }
+
+        float rx = vz;
+        float rz = -vx;
+        final float rLength = Mth.sqrt(rx * rx + rz * rz);
+        if (rLength < 1.0e-5f) {
+            rx = 1f;
+            rz = 0f;
+        } else {
+            rx /= rLength;
+            rz /= rLength;
+        }
+        this.right[0] = rx;
+        this.right[1] = 0f;
+        this.right[2] = rz;
+
+        this.up[0] = vy * rz;
+        this.up[1] = vz * rx - vx * rz;
+        this.up[2] = -vy * rx;
     }
 
     void faces(final int x, final int y, final int z, final int mask, final float grow,

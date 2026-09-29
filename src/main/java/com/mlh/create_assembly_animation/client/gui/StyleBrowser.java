@@ -18,6 +18,7 @@ import net.minecraft.locale.Language;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
@@ -309,6 +310,11 @@ final class StyleBrowser extends AbstractWidget {
         }
     }
 
+    static MutableComponent credit(final AnimationStyle style) {
+        final MutableComponent source = style.source().name().copy();
+        return style.author() == null ? source : source.append(" · ").append(style.author());
+    }
+
     private static boolean within(final double mouseX, final double mouseY, final int x, final int y, final int size) {
         return mouseX >= x && mouseX < x + size && mouseY >= y && mouseY < y + size;
     }
@@ -547,7 +553,7 @@ final class StyleBrowser extends AbstractWidget {
             final Font font = font();
             final List<FormattedCharSequence> lines = new ArrayList<>();
             lines.add(this.style.displayName().getVisualOrderText());
-            lines.add(this.style.source().name().copy().withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
+            lines.add(credit(this.style).withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
             lines.addAll(font.split(this.style.description().copy().withStyle(ChatFormatting.GRAY), 220));
             return lines;
         }

@@ -72,7 +72,7 @@ abstract class ShipAnimation {
         this.subLevelId = subLevelId;
         this.shape = shape;
         this.style = style;
-        this.playbackSpeed = style.settings().speed().get().floatValue();
+        this.playbackSpeed = style.speed();
     }
 
     protected abstract float lifetime();
@@ -228,6 +228,7 @@ abstract class ShipAnimation {
                            final VertexConsumer overlay, final GlowCanvas canvas, final float brightness) {
         this.drawDirect(blocks, daylight, matrix, time, fade);
         canvas.begin(glow, ink, overlay, matrix, fade * brightness, fade, eye.x(), eye.y(), eye.z());
+        canvas.shade(0.3f + 0.7f * clamp01(daylight));
         this.draw(canvas, time);
     }
 

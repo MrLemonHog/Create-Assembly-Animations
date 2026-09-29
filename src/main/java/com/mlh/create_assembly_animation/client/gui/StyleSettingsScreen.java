@@ -2,7 +2,9 @@ package com.mlh.create_assembly_animation.client.gui;
 
 import com.mlh.create_assembly_animation.AAConfig;
 import com.mlh.create_assembly_animation.client.AnimationStyle;
+import com.mlh.create_assembly_animation.client.PackAnimations;
 import com.mlh.create_assembly_animation.client.Phase;
+import com.mlh.create_assembly_animation.client.StyleOption.Setting;
 import com.mlh.create_assembly_animation.client.StyleOption;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
@@ -15,7 +17,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import net.neoforged.neoforge.common.ModConfigSpec;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -111,7 +112,7 @@ final class StyleSettingsScreen extends Screen {
         return widgets;
     }
 
-    private static <E extends Enum<E>> CycleButton<E> choice(final StyleOption.Choice<E> choice) {
+    private static <T> CycleButton<T> choice(final StyleOption.Choice<T> choice) {
         return CycleButton.builder(choice.format())
                 .withValues(choice.values())
                 .withInitialValue(choice.value().get())
@@ -120,19 +121,15 @@ final class StyleSettingsScreen extends Screen {
 
     private void reset() {
         for (final StyleOption option : this.style.options())
-            reset(option.value());
+            option.value().reset();
         this.rebuildWidgets();
-    }
-
-    private static <T> void reset(final ModConfigSpec.ConfigValue<T> value) {
-        value.set(value.getDefault());
     }
 
     @Override
     public void render(final GuiGraphics graphics, final int mouseX, final int mouseY, final float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(this.font, this.title, this.width / 2, 8, 0xFFFFFF);
-        graphics.drawCenteredString(this.font, this.style.source().name().copy().withStyle(ChatFormatting.GRAY),
+        graphics.drawCenteredString(this.font, StyleBrowser.credit(this.style).withStyle(ChatFormatting.GRAY),
                 this.width / 2, 19, 0xFFFFFF);
         graphics.renderOutline(this.previewX - 1, this.previewY - 1, this.previewWidth + 2, this.previewHeight + 2,
                 0xFF3A3A3A);
@@ -143,19 +140,20 @@ final class StyleSettingsScreen extends Screen {
     @Override
     public void onClose() {
         AAConfig.SPEC.save();
+        PackAnimations.saveSettings();
         this.minecraft.setScreen(this.parent);
     }
 
     private static final class SettingSlider extends AbstractSliderButton {
 
         private final Component caption;
-        private final ModConfigSpec.DoubleValue setting;
+        private final Setting<Double> setting;
         private final double min;
         private final double max;
         private final double step;
         private final DoubleFunction<String> format;
 
-        private SettingSlider(final Component caption, final ModConfigSpec.DoubleValue setting, final double min,
+        private SettingSlider(final Component caption, final Setting<Double> setting, final double min,
                               final double max, final double step, final DoubleFunction<String> format) {
             super(0, 0, COLUMN, 20, caption, (setting.get() - min) / (max - min));
             this.caption = caption;

@@ -43,11 +43,16 @@
   "create_assembly_animation.style.diagram.description": "Sub-level is sketched and redrawn like a page of the Contraption Diagram, with its forces.",
   "create_assembly_animation.style.scanner": "Scanner",
   "create_assembly_animation.style.scanner.description": "A laser sheet sweeps up the structure on assembly and down it on disassembly.",
+  "create_assembly_animation.style.fire": "Fire",
+  "create_assembly_animation.style.fire.description": "The structure catches fire. Someone grab a bucket!",
+  "create_assembly_animation.style.tnt": "TNT",
+  "create_assembly_animation.style.tnt.description": "Every block turns into primed TNT. Boom!",
   "create_assembly_animation.laser_color.cyan": "Cyan",
   "create_assembly_animation.laser_color.green": "Green",
   "create_assembly_animation.laser_color.gold": "Gold",
   "create_assembly_animation.laser_color.magenta": "Magenta",
   "create_assembly_animation.laser_color.red": "Red",
   "create_assembly_animation.laser_color.white": "White",
-  "create_assembly_animation.source.built_in": "Create Assembly Animation"
+  "create_assembly_animation.source.built_in": "Create Assembly Animation",
+  "create_assembly_animation.pack_animation.failed": "%s pack animation(s) failed to compile"
 }

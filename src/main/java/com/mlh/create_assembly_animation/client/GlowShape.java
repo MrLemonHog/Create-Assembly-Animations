@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +49,9 @@ final class GlowShape {
     final float centerZ;
 
     private final long[] positions;
+
+    @Nullable
+    private Frame frame;
 
     private GlowShape(final BlockPos origin, final long[] positions) {
         this.origin = origin.immutable();
@@ -139,6 +143,13 @@ final class GlowShape {
         return new GlowShape(pos, new long[]{pos.asLong()});
     }
 
+    Frame frame() {
+        if (this.frame == null)
+            this.frame = new Frame(this.origin, this.minX, this.minY, this.minZ, this.maxX, this.maxY, this.maxZ,
+                    this.centerX, this.centerY, this.centerZ, this.maxDistance);
+        return this.frame;
+    }
+
     long position(final int block) {
         return this.positions[block];
     }
@@ -174,5 +185,9 @@ final class GlowShape {
             }
         }
         return edges.toArray(new Direction[0][]);
+    }
+
+    record Frame(BlockPos origin, int minX, int minY, int minZ, int maxX, int maxY, int maxZ,
+                 float centerX, float centerY, float centerZ, float maxDistance) {
     }
 }

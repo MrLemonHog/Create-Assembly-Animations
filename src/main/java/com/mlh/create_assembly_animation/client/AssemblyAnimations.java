@@ -30,6 +30,11 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.jetbrains.annotations.Nullable;
+import net.neoforged.neoforge.client.event.RegisterShadersEvent;
+import java.lang.reflect.Method;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import net.neoforged.fml.ModList;
 import org.joml.Matrix4fStack;
 
 import java.util.ArrayList;
@@ -38,6 +43,8 @@ import java.util.UUID;
 
 @EventBusSubscriber(modid = CreateAssemblyAnimation.ID, value = Dist.CLIENT)
 public final class AssemblyAnimations {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CreateAssemblyAnimation.ID);
 
     private static final List<ShipAnimation> ACTIVE = new ArrayList<>();
     private static final GlowCanvas CANVAS = new GlowCanvas();
@@ -49,6 +56,10 @@ public final class AssemblyAnimations {
     private static ClientLevel trackedLevel;
 
     private AssemblyAnimations() {
+    }
+
+    public static void registerShaders(final RegisterShadersEvent event) {
+        DiagramStyle.Redraw.registerShader(event);
     }
 
     public static void onLeverPulled(final BlockPos assembler) {
@@ -175,7 +186,7 @@ public final class AssemblyAnimations {
 
     @SubscribeEvent
     public static void render(final RenderLevelStageEvent event) {
-        final boolean shaderPack = ShaderPacks.inUse();
+        final boolean shaderPack = shaderPackInUse();
         final RenderLevelStageEvent.Stage stage = shaderPack
                 ? RenderLevelStageEvent.Stage.AFTER_LEVEL : RenderLevelStageEvent.Stage.AFTER_PARTICLES;
         if (event.getStage() != stage || ACTIVE.isEmpty())
@@ -218,12 +229,14 @@ public final class AssemblyAnimations {
 
         for (final ShipAnimation animation : ACTIVE)
             animation.render(level, poseStack, glow, ink, overlay, CANVAS, camera, partialTick,
-                    animation.style.settings().brightness().get().floatValue());
+                    animation.style.brightness());
 
         final MeshData inkMesh = ink.build();
         if (inkMesh != null)
             RenderType.debugQuads().draw(inkMesh);
 
+        CANVAS.flushItems(buffers);
+        CANVAS.flushSprites();
         buffers.endBatch(RenderType.lightning());
 
         final MeshData overlayMesh = overlay.build();
@@ -310,6 +323,36 @@ public final class AssemblyAnimations {
             final int[] shell = this.shape.shell;
             for (int i = 0; i < SMOKE && shell.length > 0; i++)
                 this.faceParticle(level, pose, shell[this.random.nextInt(shell.length)], ParticleTypes.SMOKE, 0.02);
+        }
+    }
+
+    @Nullable
+    private static Object irisApi;
+    @Nullable
+    private static Method irisInUse;
+    private static boolean irisResolved;
+
+    private static boolean shaderPackInUse() {
+        if (!irisResolved) {
+            irisResolved = true;
+            if (ModList.get().isLoaded("iris")) {
+                try {
+                    final Class<?> type = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
+                    irisApi = type.getMethod("getInstance").invoke(null);
+                    irisInUse = type.getMethod("isShaderPackInUse");
+                } catch (final ReflectiveOperationException | LinkageError e) {
+                    LOGGER.warn("Could not reach the Iris API; shader packs may draw the animations incorrectly.", e);
+                }
+            }
+        }
+
+        if (irisApi == null || irisInUse == null)
+            return false;
+        try {
+            return (boolean) irisInUse.invoke(irisApi);
+        } catch (final ReflectiveOperationException e) {
+            irisApi = null;
+            return false;
         }
     }
 }

@@ -43,11 +43,16 @@
   "create_assembly_animation.style.diagram.description": "Конструкция набрасывается и перерисовывается как страница Contraption Diagram, со стрелками сил.",
   "create_assembly_animation.style.scanner": "Сканер",
   "create_assembly_animation.style.scanner.description": "Лазерная плоскость проходит по конструкции снизу вверх при сборке и сверху вниз при разборке.",
+  "create_assembly_animation.style.fire": "Огонь",
+  "create_assembly_animation.style.fire.description": "Конструкция загорается огнём. Несите ведро воды!",
+  "create_assembly_animation.style.tnt": "ТНТ",
+  "create_assembly_animation.style.tnt.description": "Каждый блок становится подожжённым динамитом. Бум!",
   "create_assembly_animation.laser_color.cyan": "Голубой",
   "create_assembly_animation.laser_color.green": "Зелёный",
   "create_assembly_animation.laser_color.gold": "Золотой",
   "create_assembly_animation.laser_color.magenta": "Пурпурный",
   "create_assembly_animation.laser_color.red": "Красный",
   "create_assembly_animation.laser_color.white": "Белый",
-  "create_assembly_animation.source.built_in": "Create Assembly Animation"
+  "create_assembly_animation.source.built_in": "Create Assembly Animation",
+  "create_assembly_animation.pack_animation.failed": "Не скомпилировалось анимаций из паков: %s"
 }

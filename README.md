@@ -23,13 +23,31 @@
 <br>
 <br>
 
+### **And more** - Fire, TNT, and any animation a resource pack brings.
+
 ## Set up separately
 
 Assembly and disassembly each get their own switch and style. Every style has its own page with brightness, speed
-and options of its own: force arrows and measurements for Diagram, laser colour and halo for Scanner. Each tile shows the style running, so you see what you pick.
+and options of its own: force arrows and measurements for Diagram, laser colour and halo for Scanner; pack animations
+can bring their own, like the lamp of TARDIS or the leaves of Thanos Snap. Each tile shows the style running, so you see what you pick.
 <br>
 
-![Settings](https://github.com/MrLemonHog/archive/blob/main/img/caa/settings.webp?raw=true)
+<img src="https://github.com/MrLemonHog/archive/blob/main/img/caa/settings.webp?raw=true" width="100%" alt="settings">
+
+## Custom animations
+
+You can make your own animations and upload them to Modrinth or CurseForge: an animation is just a resource pack with
+a fragment shader and a JSON.
+`F3 + T` recompiles it while the preview plays. Read the [guide](https://github.com/MrLemonHog/Create-Assembly-Animations/blob/main/docs/custom-animations.md) ([на русском](https://github.com/MrLemonHog/Create-Assembly-Animations/blob/main/docs/custom-animations.ru.md)) to learn how.
+
+<img src="https://github.com/MrLemonHog/archive/blob/main/img/caa/custom_animations.webp?raw=true" width="100%" alt="custom_animations">
+
+## More Assembly Animations:
+
+|                                                          Icon                                                          |                                                                 Banner                                                                  | Info |
+|:----------------------------------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------------------------:| :---: |
+| <img src="https://github.com/MrLemonHog/archive/blob/main/img/caa/icon-pack/pack_vanilla_512.png?raw=true" width="64"> |    <img src="https://github.com/MrLemonHog/archive/blob/main/img/caa/animation-preview/caa-vanilla/sculk.webp?raw=true" width="200">    | [MrLemonHog<br>"Vanilla"](https://modrinth.com/project/caa-vanilla)<br>Sculk, Portal, Copper Touch |
+| <img src="https://github.com/MrLemonHog/archive/blob/main/img/caa/icon-pack/pack_extras_512.png?raw=true" width="64">  | <img src="https://github.com/MrLemonHog/archive/blob/main/img/caa/animation-preview/caa-extras/satisfactory.webp?raw=true" width="200"> | [MrLemonHog<br>"Extras"](https://modrinth.com/project/caa-extras)<br>TARDIS, Thanos Snap, Satisfactory |
 
 ![Requires](https://github.com/MrLemonHog/archive/blob/main/img/apt/requiresv3.png?raw=true)
 

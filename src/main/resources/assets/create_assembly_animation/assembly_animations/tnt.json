@@ -1,0 +1,63 @@
+{
+  "duration": 6,
+  "textures": {
+    "TntSide": "minecraft:textures/block/tnt_side.png",
+    "TntTop": "minecraft:textures/block/tnt_top.png",
+    "TntBottom": "minecraft:textures/block/tnt_bottom.png"
+  },
+  "sounds": [
+    {
+      "sound": "minecraft:entity.tnt.primed",
+      "at": 0.0,
+      "volume": 0.9
+    },
+    {
+      "sound": "minecraft:entity.tnt.primed",
+      "every": 1.0,
+      "volume": 0.4,
+      "stages": "alignment"
+    },
+    {
+      "sound": "minecraft:entity.generic.explode",
+      "at": 0.58,
+      "volume": 1.0,
+      "pitch": 0.9
+    },
+    {
+      "sound": "minecraft:entity.generic.explode",
+      "at": 0.72,
+      "volume": 0.9,
+      "pitch": 1.1
+    },
+    {
+      "sound": "minecraft:entity.generic.explode",
+      "at": 0.86,
+      "volume": 0.7,
+      "pitch": 1.0
+    }
+  ],
+  "particles": [
+    {
+      "type": "minecraft:explosion_emitter",
+      "where": "wave",
+      "from": 0.533,
+      "to": 0.8,
+      "chance": 0.3,
+      "speed": 0.0
+    },
+    {
+      "type": "minecraft:explosion",
+      "where": "wave",
+      "from": 0.533,
+      "to": 0.8,
+      "speed": 0.02
+    },
+    {
+      "type": "minecraft:large_smoke",
+      "from": 0.6,
+      "to": 1.0,
+      "rate": 20,
+      "speed": 0.08
+    }
+  ]
+}

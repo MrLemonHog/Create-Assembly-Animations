@@ -1,5 +1,6 @@
 package com.mlh.create_assembly_animation.client;
 
+import com.mlh.create_assembly_animation.client.GlowShape.Frame;
 import com.mlh.create_assembly_animation.AAConfig;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.simulated_team.simulated.index.SimSoundEvents;
@@ -11,6 +12,13 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.BlockGetter;
 import org.jetbrains.annotations.Nullable;
+import java.io.IOException;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import net.neoforged.neoforge.client.event.RegisterShadersEvent;
+import net.minecraft.client.renderer.ShaderInstance;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mlh.create_assembly_animation.CreateAssemblyAnimation;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -81,39 +89,39 @@ final class DiagramStyle {
         canvas.spark(at[0], at[1], at[2], 0.09f, PENCIL[0], PENCIL[1], PENCIL[2], alpha);
     }
 
-    private static float annotationScale(final GlowShape shape) {
-        return Mth.clamp(shape.maxDistance / 8f, 1f, 4f);
+    private static float annotationScale(final Frame frame) {
+        return Mth.clamp(frame.maxDistance() / 8f, 1f, 4f);
     }
 
-    private static void callout(final GlowCanvas canvas, final GlowShape shape, final float grow, final float alpha,
+    private static void callout(final GlowCanvas canvas, final Frame frame, final float grow, final float alpha,
                                 final String mark, final float markScale, @Nullable final Forces forces) {
         if (grow <= 0f || alpha <= 0f)
             return;
 
-        final float scale = annotationScale(shape);
-        final float top = shape.maxY + 1f + 1.5f * scale;
-        final float height = (top - shape.centerY) * clamp01(grow);
-        canvas.inkPost(shape.centerX, shape.centerY, shape.centerZ, height, 0.035f, INK, alpha);
+        final float scale = annotationScale(frame);
+        final float top = frame.maxY() + 1f + 1.5f * scale;
+        final float height = (top - frame.centerY()) * clamp01(grow);
+        canvas.inkPost(frame.centerX(), frame.centerY(), frame.centerZ(), height, 0.035f, INK, alpha);
 
         if (grow < 1f)
             return;
 
         final float markY = top + 0.15f * markScale;
-        canvas.label(shape.centerX, markY, shape.centerZ, Component.literal(mark), INK, alpha, markScale, 0, false);
+        canvas.label(frame.centerX(), markY, frame.centerZ(), Component.literal(mark), INK, alpha, markScale, 0, false);
         if (forces != null && AAConfig.DIAGRAM_MEASUREMENTS.get())
-            canvas.label(shape.centerX, markY - 0.2f * markScale, shape.centerZ,
+            canvas.label(frame.centerX(), markY - 0.2f * markScale, frame.centerZ(),
                     Component.translatable("simulated.contraption_diagram.mass", String.format("%,.2f", forces.mass())),
                     INK, alpha, scale, 1, false);
     }
 
-    private static void dimensions(final GlowCanvas canvas, final GlowShape shape, final float grow, final float alpha) {
+    private static void dimensions(final GlowCanvas canvas, final Frame frame, final float grow, final float alpha) {
         if (!AAConfig.DIAGRAM_MEASUREMENTS.get() || grow <= 0f || alpha <= 0f)
             return;
 
-        final float y = shape.minY + 0.03f;
-        final float scale = annotationScale(shape);
-        dimension(canvas, true, shape.minX, shape.maxX + 1f, shape.maxZ + 1f, y, grow, alpha, scale);
-        dimension(canvas, false, shape.minZ, shape.maxZ + 1f, shape.maxX + 1f, y, grow, alpha, scale);
+        final float y = frame.minY() + 0.03f;
+        final float scale = annotationScale(frame);
+        dimension(canvas, true, frame.minX(), frame.maxX() + 1f, frame.maxZ() + 1f, y, grow, alpha, scale);
+        dimension(canvas, false, frame.minZ(), frame.maxZ() + 1f, frame.maxX() + 1f, y, grow, alpha, scale);
     }
 
     private static void dimension(final GlowCanvas canvas, final boolean alongX, final float from, final float to,
@@ -207,14 +215,14 @@ final class DiagramStyle {
 
     private static final int MAX_LABELS = 10;
 
-    private static void forceArrows(final GlowCanvas canvas, final GlowShape shape, @Nullable final Forces forces,
-                                    final float grow, final float alpha, final float scale) {
-        if (!AAConfig.DIAGRAM_FORCE_ARROWS.get() || forces == null || forces.arrows().isEmpty() || grow <= 0f || alpha <= 0f)
+    private static void forceArrows(final GlowCanvas canvas, final Frame frame, @Nullable final Forces forces,
+                                    final float grow, final float alpha, final float scale, final boolean enabled) {
+        if (!enabled || forces == null || forces.arrows().isEmpty() || grow <= 0f || alpha <= 0f)
             return;
 
-        final float extent = Math.max(Math.max(shape.maxX - shape.minX, shape.maxY - shape.minY), shape.maxZ - shape.minZ) + 1;
+        final float extent = Math.max(Math.max(frame.maxX() - frame.minX(), frame.maxY() - frame.minY()), frame.maxZ() - frame.minZ()) + 1;
         final float radius = Math.max(extent * 0.55f, 2f);
-        final BlockPos origin = shape.origin;
+        final BlockPos origin = frame.origin();
         final float width = 0.045f * scale;
         int labelled = 0;
 
@@ -273,14 +281,14 @@ final class DiagramStyle {
 
     private abstract static class Page extends ShipAnimation {
 
-        protected final DiagramRedraw model;
+        protected final Redraw model;
         @Nullable
         protected Forces forces;
         protected float forcesSince = -1f;
 
         Page(final Role role, @Nullable final UUID subLevel, final GlowShape shape) {
             super(AnimationStyle.DIAGRAM, role, subLevel, shape);
-            this.model = new DiagramRedraw(shape);
+            this.model = new Redraw(shape);
         }
 
         @Override
@@ -378,11 +386,12 @@ final class DiagramStyle {
 
             final float annotate = clamp01((time - this.annotateStart) / ANNOTATE_TICKS);
             final float annotationAlpha = 1f - clamp01((time - this.eraseStart) / 6f);
-            final float scale = annotationScale(this.shape);
+            final Frame frame = this.shape.frame();
+            final float scale = annotationScale(frame);
 
-            callout(canvas, this.shape, outCubic(annotate * 1.6f), annotationAlpha, CHECK_MARK, scale * 2.2f, this.forces);
-            dimensions(canvas, this.shape, outCubic((annotate - 0.3f) / 0.7f), annotationAlpha);
-            forceArrows(canvas, this.shape, this.forces, this.forceGrowth(time, this.annotateStart + 4f), annotationAlpha, scale);
+            callout(canvas, frame, outCubic(annotate * 1.6f), annotationAlpha, CHECK_MARK, scale * 2.2f, this.forces);
+            dimensions(canvas, frame, outCubic((annotate - 0.3f) / 0.7f), annotationAlpha);
+            forceArrows(canvas, frame, this.forces, this.forceGrowth(time, this.annotateStart + 4f), annotationAlpha, scale, AAConfig.DIAGRAM_FORCE_ARROWS.get());
         }
 
         @Override
@@ -445,10 +454,11 @@ final class DiagramStyle {
                 }
             }
 
-            final float scale = annotationScale(this.shape);
+            final Frame frame = this.shape.frame();
+            final float scale = annotationScale(frame);
             gizmo(canvas, this.shape, time, 0.8f * appear);
-            callout(canvas, this.shape, appear, appear, CENTER_OF_MASS, scale * 2.2f, this.forces);
-            forceArrows(canvas, this.shape, this.forces, this.forceGrowth(time, APPEAR_TICKS), appear, scale);
+            callout(canvas, frame, appear, appear, CENTER_OF_MASS, scale * 2.2f, this.forces);
+            forceArrows(canvas, frame, this.forces, this.forceGrowth(time, APPEAR_TICKS), appear, scale, AAConfig.DIAGRAM_FORCE_ARROWS.get());
         }
 
         @Override
@@ -506,13 +516,14 @@ final class DiagramStyle {
             }
 
             final float annotationAlpha = 1f - clamp01((time - this.eraseStart) / 6f);
-            final float scale = annotationScale(this.shape);
+            final Frame frame = this.shape.frame();
+            final float scale = annotationScale(frame);
             final float stamp = time < STAMP_AT ? 0f : (float) Math.exp(-(time - STAMP_AT) / 2.5f);
             final float leader = time < STAMP_AT ? Math.min(outCubic((time - APPEAR_TICKS * 0.5f) / (STAMP_AT - APPEAR_TICKS * 0.5f)), 0.99f) : 1f;
 
-            callout(canvas, this.shape, leader, annotationAlpha, CHECK_MARK, scale * 2.6f * (1f + 0.6f * stamp), this.forces);
-            dimensions(canvas, this.shape, outCubic((time - APPEAR_TICKS * 0.6f) / 10f), annotationAlpha);
-            forceArrows(canvas, this.shape, this.forces, this.forceGrowth(time, APPEAR_TICKS), annotationAlpha, scale);
+            callout(canvas, frame, leader, annotationAlpha, CHECK_MARK, scale * 2.6f * (1f + 0.6f * stamp), this.forces);
+            dimensions(canvas, frame, outCubic((time - APPEAR_TICKS * 0.6f) / 10f), annotationAlpha);
+            forceArrows(canvas, frame, this.forces, this.forceGrowth(time, APPEAR_TICKS), annotationAlpha, scale, AAConfig.DIAGRAM_FORCE_ARROWS.get());
         }
 
         @Override
@@ -526,6 +537,58 @@ final class DiagramStyle {
                 this.sound(level, pose, SimSoundEvents.DIAGRAM_CHECKMARK.event(), 1.0f, 1.0f);
             if (this.crossed(time, this.eraseStart))
                 this.sound(level, pose, SimSoundEvents.DIAGRAM_ERASE.event(), 0.9f, 1.0f);
+        }
+    }
+
+    static final class Redraw implements AutoCloseable {
+
+        private static final Logger LOGGER = LoggerFactory.getLogger(CreateAssemblyAnimation.ID);
+        private static final float SOFTNESS = 0.35f;
+        private static final float DIAGRAM_EXPOSURE = 0.41f;
+
+        @Nullable
+        private static ShaderInstance shader;
+
+        private final StructureRedraw redraw;
+        private final float reach;
+
+        Redraw(final GlowShape shape) {
+            this.redraw = new StructureRedraw(shape);
+            this.reach = Math.max(shape.maxDistance, 1f);
+        }
+
+        static void registerShader(final RegisterShadersEvent event) {
+            try {
+                event.registerShader(new ShaderInstance(event.getResourceProvider(),
+                        CreateAssemblyAnimation.asResource("diagram_post"), DefaultVertexFormat.POSITION), loaded -> shader = loaded);
+            } catch (final IOException e) {
+                LOGGER.error("Could not load the diagram shader; the diagram style will draw outlines only.", e);
+            }
+        }
+
+        void draw(final BlockGetter blocks, final float daylight, final Matrix4f matrix, final float reveal,
+                  final float erase, final boolean eraseFromFar) {
+            final ShaderInstance post = shader;
+            if (post == null || reveal <= 0f || erase >= 1f)
+                return;
+
+            this.redraw.draw(blocks, matrix, post, uniforms -> {
+                uniforms.safeGetUniform("Reveal").set(front(reveal));
+                uniforms.safeGetUniform("Erase").set(front(erase));
+                uniforms.safeGetUniform("EraseFromFar").set(eraseFromFar ? 1f : 0f);
+                uniforms.safeGetUniform("Softness").set(SOFTNESS);
+                uniforms.safeGetUniform("Reach").set(this.reach);
+                uniforms.safeGetUniform("Exposure").set(DIAGRAM_EXPOSURE / Mth.clamp(daylight, 0.25f, 1f));
+            });
+        }
+
+        private static float front(final float progress) {
+            return ShipAnimation.clamp01(progress) * (1f + 2f * SOFTNESS) - SOFTNESS;
+        }
+
+        @Override
+        public void close() {
+            this.redraw.close();
         }
     }
 }
