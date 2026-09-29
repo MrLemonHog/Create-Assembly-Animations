@@ -21,7 +21,6 @@
 
 <img src="https://github.com/MrLemonHog/archive/blob/main/img/caa/scan.webp?raw=true" width="100%" alt="scanner style">
 <br>
-<br>
 
 ### **And more** - Fire, TNT, and any animation a resource pack brings.
 
