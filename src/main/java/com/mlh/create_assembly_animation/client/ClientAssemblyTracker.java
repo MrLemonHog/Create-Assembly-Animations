@@ -90,6 +90,7 @@ public final class ClientAssemblyTracker {
             final Disassembly disassembly = iterator.next();
             if (disassembly.assembler().equals(assembler)) {
                 subLevel = disassembly.subLevel().getUniqueId();
+                Forces.forget(subLevel);
                 iterator.remove();
             }
         }
@@ -115,12 +116,16 @@ public final class ClientAssemblyTracker {
             }
 
             final long age = now - disassembly.since();
-            if (age > MAX_ALIGN_TICKS)
+            if (age > MAX_ALIGN_TICKS) {
+                Forces.forget(subLevel.getUniqueId());
                 return true;
+            }
             if (age > 0 && age % FORCE_REFRESH_TICKS == 0)
                 Forces.request(subLevel.getUniqueId(), 0);
             return false;
         });
+
+        Forces.keepLatest(DISASSEMBLING.keySet());
     }
 
     private static boolean tryAssemble(final ClientLevel level, final ClientSubLevelContainer container,

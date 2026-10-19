@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public record Forces(List<Arrow> arrows, double mass, double maxMagnitude) {
@@ -120,6 +121,10 @@ public record Forces(List<Arrow> arrows, double mass, double maxMagnitude) {
     static void forget(final UUID subLevel) {
         DUE.remove(subLevel);
         LATEST.remove(subLevel);
+    }
+
+    static void keepLatest(final Set<UUID> subLevels) {
+        LATEST.keySet().retainAll(subLevels);
     }
 
     static void clear() {

@@ -316,11 +316,14 @@ public final class PackAnimations extends SimplePreparableReloadListener<List<Pa
 
             final int width = images.get(0).getWidth();
             final int height = images.get(0).getHeight();
+            for (final NativeImage image : images) {
+                if (image.getWidth() != width || image.getHeight() != height)
+                    throw new IOException("the frames of " + name + " have different sizes");
+            }
+
             final NativeImage strip = new NativeImage(width, height * images.size(), false);
             for (int i = 0; i < images.size(); i++) {
                 final NativeImage image = images.get(i);
-                if (image.getWidth() != width || image.getHeight() != height)
-                    throw new IOException("the frames of " + name + " have different sizes");
                 for (int x = 0; x < width; x++) {
                     for (int y = 0; y < height; y++)
                         strip.setPixelRGBA(x, i * height + y, image.getPixelRGBA(x, y));
