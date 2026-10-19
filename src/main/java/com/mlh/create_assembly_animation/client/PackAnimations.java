@@ -151,7 +151,14 @@ public final class PackAnimations extends SimplePreparableReloadListener<List<Pa
 
         for (final Definition definition : definitions) {
             final List<ShaderStyle.Texture> textures = textures(manager, definition);
-            final List<Option> options = options(definition.id, definition.meta);
+            final List<Option> options;
+            try {
+                options = options(definition.id, definition.meta);
+            } catch (final RuntimeException e) {
+                LOGGER.error("The assembly animation {} has options that cannot be read", definition.id, e);
+                failed.add(definition.id);
+                continue;
+            }
             final PackEffects.Program program;
             try {
                 final Map<String, Option> byId = new LinkedHashMap<>();
@@ -543,8 +550,15 @@ public final class PackAnimations extends SimplePreparableReloadListener<List<Pa
                 case "choice" -> {
                     final List<String> values = new ArrayList<>();
                     final JsonElement list = json.get("values");
-                    if (list != null && list.isJsonArray())
-                        list.getAsJsonArray().forEach(value -> values.add(value.getAsString()));
+                    if (list != null && list.isJsonArray()) {
+                        for (final JsonElement value : list.getAsJsonArray()) {
+                            if (value.isJsonPrimitive())
+                                values.add(value.getAsString());
+                            else
+                                LOGGER.warn("A value of the choice {} of the assembly animation {} is not a word; "
+                                        + "it is ignored.", id, style);
+                        }
+                    }
                     if (values.isEmpty()) {
                         LOGGER.warn("The choice {} of the assembly animation {} has no values; it is ignored.", id, style);
                         continue;
