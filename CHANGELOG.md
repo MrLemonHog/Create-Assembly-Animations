@@ -1,4 +1,10 @@
 # Changelog
+## 2.0.1
+
+### Fixed:
+- fixed a mistake in the options of a resource pack animation turning off every resource pack
+- fixed small memory leaks
+
 ## 2.0.0
 
 ### Added:
